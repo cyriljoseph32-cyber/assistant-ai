@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [composer, setComposer] = useState<Composer | null>(null);
   const [composerText, setComposerText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
   const [toast, setToast] = useState("");
 
   async function load(password = pw) {
@@ -65,6 +66,28 @@ export default function Dashboard() {
       body: JSON.stringify(body),
     });
     await load();
+  }
+
+  async function checkEmail() {
+    setEmailBusy(true);
+    try {
+      const res = await fetch("/api/cron/email", {
+        headers: { "x-dashboard-password": pw },
+        cache: "no-store",
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setToast("❌ " + (j.error?.toString?.() || "Email check failed"));
+      } else {
+        setToast(`✅ Emails: ${j.processed ?? 0} read, ${j.replied ?? 0} replied, ${j.escalated ?? 0} escalated`);
+        await load();
+      }
+    } catch {
+      setToast("❌ Email check failed");
+    } finally {
+      setEmailBusy(false);
+      setTimeout(() => setToast(""), 5000);
+    }
   }
 
   function openComposer(c: Composer) {
@@ -134,6 +157,15 @@ export default function Dashboard() {
         <a onClick={() => load()} style={{ cursor: "pointer" }}>
           refresh
         </a>
+        {"  ·  "}
+        <button
+          className="ghost"
+          onClick={checkEmail}
+          disabled={emailBusy}
+          style={{ marginLeft: 6 }}
+        >
+          {emailBusy ? "Checking…" : "✉️ Check email"}
+        </button>
       </p>
 
       <div className="cards">
