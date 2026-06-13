@@ -60,7 +60,27 @@ export const env = {
   get dashboardPassword() {
     return optional("DASHBOARD_PASSWORD", "change-me");
   },
+
+  // --- Gmail (optional email channel) ---
+  get gmailClientId() {
+    return optional("GMAIL_CLIENT_ID");
+  },
+  get gmailClientSecret() {
+    return optional("GMAIL_CLIENT_SECRET");
+  },
+  get gmailRefreshToken() {
+    return optional("GMAIL_REFRESH_TOKEN");
+  },
 };
+
+/** True only when all three Gmail OAuth secrets are present. */
+export function gmailConfigured(): boolean {
+  return Boolean(
+    process.env.GMAIL_CLIENT_ID &&
+      process.env.GMAIL_CLIENT_SECRET &&
+      process.env.GMAIL_REFRESH_TOKEN
+  );
+}
 
 // "whatsapp:+66..." helpers — Twilio prefixes WhatsApp numbers with "whatsapp:".
 export function toWhatsAppAddress(e164: string): string {
