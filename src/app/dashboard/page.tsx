@@ -1,12 +1,10 @@
 "use client";
 
 // ===========================================================================
-// Simple admin dashboard (MVP). Password-gated (shared password).
-// Shows the daily summary, open escalations, booking requests, and leads,
-// with one-click actions to confirm bookings and resolve escalations.
-//
-// NOTE: this is MVP-grade auth. For production, also enable Vercel Deployment
-// Protection on the project, or put the app behind SSO / a reverse proxy.
+// Admin dashboard (MVP) with human take-over.
+// Password-gated. Shows the daily summary, open escalations ("need a human"),
+// bookings and leads — and lets the owner REPLY to any customer on WhatsApp
+// straight from here, then resolve.
 // ===========================================================================
 
 import { useState } from "react";
@@ -20,11 +18,24 @@ interface DashData {
   report: { text: string; stats: Record<string, number> };
 }
 
+interface Composer {
+  contactId: string;
+  conversationId?: string;
+  escalationId?: string;
+  name: string;
+}
+
 export default function Dashboard() {
   const [pw, setPw] = useState("");
   const [data, setData] = useState<DashData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Human take-over composer
+  const [composer, setComposer] = useState<Composer | null>(null);
+  const [composerText, setComposerText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState("");
 
   async function load(password = pw) {
     setLoading(true);
@@ -40,7 +51,7 @@ export default function Dashboard() {
         return;
       }
       setData(await res.json());
-    } catch (e) {
+    } catch {
       setError("Failed to load.");
     } finally {
       setLoading(false);
@@ -56,10 +67,47 @@ export default function Dashboard() {
     await load();
   }
 
+  function openComposer(c: Composer) {
+    setComposer(c);
+    setComposerText("");
+  }
+
+  async function sendReply() {
+    if (!composer || !composerText.trim()) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-dashboard-password": pw },
+        body: JSON.stringify({
+          contact_id: composer.contactId,
+          conversation_id: composer.conversationId,
+          body: composerText.trim(),
+          resolve_escalation_id: composer.escalationId,
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setToast("❌ " + (j.error?.toString?.() || "Send failed"));
+      } else {
+        setToast("✅ Reply sent to " + composer.name);
+        setComposer(null);
+        setComposerText("");
+        await load();
+      }
+    } catch {
+      setToast("❌ Send failed");
+    } finally {
+      setBusy(false);
+      setTimeout(() => setToast(""), 4000);
+    }
+  }
+
+  // ---- Login ----
   if (!data) {
     return (
       <div className="wrap login">
-        <h1>Samui AI Assistant</h1>
+        <h1>Coco AI</h1>
         <p className="sub">Enter the dashboard password.</p>
         <input
           type="password"
@@ -80,9 +128,12 @@ export default function Dashboard() {
 
   return (
     <div className="wrap">
-      <h1>Samui AI Assistant</h1>
+      <h1>Coco AI</h1>
       <p className="sub">
-        Live overview · <a onClick={() => load()} style={{ cursor: "pointer" }}>refresh</a>
+        Live overview ·{" "}
+        <a onClick={() => load()} style={{ cursor: "pointer" }}>
+          refresh
+        </a>
       </p>
 
       <div className="cards">
@@ -97,23 +148,45 @@ export default function Dashboard() {
       <h2>Owner summary</h2>
       <pre className="report">{data.report.text}</pre>
 
-      <h2>⚠️ Waiting for a human ({data.escalations.length})</h2>
+      <h2>⚠️ Need a human ({data.escalations.length})</h2>
       <div className="card">
         {data.escalations.length === 0 ? (
           <div className="empty">Nothing waiting. 🌴</div>
         ) : (
           <table>
             <thead>
-              <tr><th>Customer</th><th>Reason</th><th>Message</th><th></th></tr>
+              <tr>
+                <th>Customer</th>
+                <th>Reason</th>
+                <th>Message</th>
+                <th style={{ width: 180 }}>Action</th>
+              </tr>
             </thead>
             <tbody>
               {data.escalations.map((e) => (
                 <tr key={e.id}>
                   <td>{e.contacts?.name ?? e.contacts?.whatsapp}</td>
-                  <td><span className={`pill ${e.reason}`}>{e.reason}</span></td>
+                  <td>
+                    <span className={`pill ${e.reason}`}>{e.reason}</span>
+                  </td>
                   <td>{e.message}</td>
                   <td>
-                    <button onClick={() => patch("/api/escalate", { id: e.id, resolved: true })}>
+                    <button
+                      onClick={() =>
+                        openComposer({
+                          contactId: e.contact_id,
+                          conversationId: e.conversation_id,
+                          escalationId: e.id,
+                          name: e.contacts?.name ?? e.contacts?.whatsapp,
+                        })
+                      }
+                    >
+                      Reply & resolve
+                    </button>{" "}
+                    <button
+                      className="ghost"
+                      onClick={() => patch("/api/escalate", { id: e.id, resolved: true })}
+                    >
                       Resolve
                     </button>
                   </td>
@@ -131,16 +204,27 @@ export default function Dashboard() {
         ) : (
           <table>
             <thead>
-              <tr><th>Customer</th><th>Service</th><th>Date</th><th>Pax</th><th>Status</th><th></th></tr>
+              <tr>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Date</th>
+                <th>Pax</th>
+                <th>Status</th>
+                <th style={{ width: 200 }}>Action</th>
+              </tr>
             </thead>
             <tbody>
               {data.bookings.map((b) => (
                 <tr key={b.id}>
                   <td>{b.contacts?.name ?? b.contacts?.whatsapp}</td>
                   <td>{b.service_name ?? "—"}</td>
-                  <td>{b.date ?? "—"} {b.time ?? ""}</td>
+                  <td>
+                    {b.date ?? "—"} {b.time ?? ""}
+                  </td>
                   <td>{b.pax ?? "—"}</td>
-                  <td><span className={`pill ${b.status}`}>{b.status}</span></td>
+                  <td>
+                    <span className={`pill ${b.status}`}>{b.status}</span>
+                  </td>
                   <td>
                     {b.status === "requested" && (
                       <button onClick={() => patch("/api/bookings", { id: b.id, status: "confirmed" })}>
@@ -148,10 +232,24 @@ export default function Dashboard() {
                       </button>
                     )}
                     {b.status === "confirmed" && (
-                      <button className="ghost" onClick={() => patch("/api/bookings", { id: b.id, status: "completed" })}>
+                      <button
+                        className="ghost"
+                        onClick={() => patch("/api/bookings", { id: b.id, status: "completed" })}
+                      >
                         Mark done
                       </button>
-                    )}
+                    )}{" "}
+                    <button
+                      className="ghost"
+                      onClick={() =>
+                        openComposer({
+                          contactId: b.contact_id,
+                          name: b.contacts?.name ?? b.contacts?.whatsapp,
+                        })
+                      }
+                    >
+                      Message
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -167,7 +265,13 @@ export default function Dashboard() {
         ) : (
           <table>
             <thead>
-              <tr><th>Customer</th><th>Interest</th><th>Last intent</th><th>Status</th></tr>
+              <tr>
+                <th>Customer</th>
+                <th>Interest</th>
+                <th>Last intent</th>
+                <th>Status</th>
+                <th style={{ width: 120 }}>Action</th>
+              </tr>
             </thead>
             <tbody>
               {data.leads.map((l) => (
@@ -175,13 +279,54 @@ export default function Dashboard() {
                   <td>{l.contacts?.name ?? l.contacts?.whatsapp}</td>
                   <td>{l.interest ?? "—"}</td>
                   <td>{l.last_intent ?? "—"}</td>
-                  <td><span className={`pill ${l.status}`}>{l.status}</span></td>
+                  <td>
+                    <span className={`pill ${l.status}`}>{l.status}</span>
+                  </td>
+                  <td>
+                    <button
+                      className="ghost"
+                      onClick={() =>
+                        openComposer({
+                          contactId: l.contact_id,
+                          name: l.contacts?.name ?? l.contacts?.whatsapp,
+                        })
+                      }
+                    >
+                      Message
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {/* Human take-over composer */}
+      {composer && (
+        <div className="overlay" onClick={() => !busy && setComposer(null)}>
+          <div className="composer" onClick={(ev) => ev.stopPropagation()}>
+            <h3>Reply to {composer.name}</h3>
+            <p className="sub">Sends a WhatsApp message from your business number.</p>
+            <textarea
+              value={composerText}
+              autoFocus
+              placeholder="Type your reply…"
+              onChange={(ev) => setComposerText(ev.target.value)}
+            />
+            <div className="composer-actions">
+              <button className="ghost" onClick={() => setComposer(null)} disabled={busy}>
+                Cancel
+              </button>
+              <button onClick={sendReply} disabled={busy || !composerText.trim()}>
+                {busy ? "Sending…" : composer.escalationId ? "Send & resolve" : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
