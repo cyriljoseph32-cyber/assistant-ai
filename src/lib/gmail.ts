@@ -10,6 +10,23 @@ import { env, gmailConfigured } from "./config";
 
 export { gmailConfigured };
 
+/** Scope used by the whole email channel (read + send + mark read). */
+export const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.modify"];
+
+/** OAuth callback URL — must be registered in the Google Cloud OAuth client. */
+export function oauthRedirectUri(): string {
+  return `${env.appBaseUrl.replace(/\/$/, "")}/api/gmail/callback`;
+}
+
+/** Connected mailbox profile — used to verify the connection is live. */
+export async function getProfile(): Promise<{ email: string; messagesTotal: number }> {
+  const res = await client().users.getProfile({ userId: "me" });
+  return {
+    email: res.data.emailAddress ?? "",
+    messagesTotal: res.data.messagesTotal ?? 0,
+  };
+}
+
 let _gmail: gmail_v1.Gmail | null = null;
 
 function client(): gmail_v1.Gmail {
