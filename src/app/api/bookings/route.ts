@@ -11,10 +11,13 @@ import { supabase } from "@/lib/supabase";
 import { setBookingStatus } from "@/services/booking.service";
 import { sendReviewRequest } from "@/services/review.service";
 import { env } from "@/lib/config";
+import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  const denied = requireAuth(req);
+  if (denied) return denied;
   const status = req.nextUrl.searchParams.get("status");
   let q = supabase
     .from("bookings")
@@ -39,6 +42,8 @@ const CreateBody = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const denied = requireAuth(req);
+  if (denied) return denied;
   const parsed = CreateBody.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -65,6 +70,8 @@ const PatchBody = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
+  const denied = requireAuth(req);
+  if (denied) return denied;
   const parsed = PatchBody.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

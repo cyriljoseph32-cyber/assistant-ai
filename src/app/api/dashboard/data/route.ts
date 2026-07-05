@@ -8,16 +8,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { buildDailyReport } from "@/services/report.service";
+import { requireAuth } from "@/lib/auth";
 import { env } from "@/lib/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const pw = req.headers.get("x-dashboard-password");
-  if (pw !== env.dashboardPassword) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const denied = requireAuth(req);
+  if (denied) return denied;
 
   const bid = env.businessId;
   const [leads, bookings, escalations, report] = await Promise.all([

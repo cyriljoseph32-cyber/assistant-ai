@@ -39,6 +39,38 @@ export async function completeText(opts: {
 }
 
 /**
+ * Stream a Claude reply as plain UTF-8 text chunks, suitable for returning
+ * directly as a fetch Response body. Used by the owner assistant chat.
+ */
+export function streamText(opts: {
+  system: string;
+  messages: { role: "user" | "assistant"; content: string }[];
+  maxTokens?: number;
+  temperature?: number;
+}): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        const stream = client().messages.stream({
+          model: env.anthropicModel,
+          max_tokens: opts.maxTokens ?? 1024,
+          temperature: opts.temperature ?? 0.5,
+          system: opts.system,
+          messages: opts.messages,
+        });
+        stream.on("text", (delta) => controller.enqueue(encoder.encode(delta)));
+        await stream.finalMessage();
+        controller.close();
+      } catch (e) {
+        controller.enqueue(encoder.encode(`\n\n[error] ${String(e)}`));
+        controller.close();
+      }
+    },
+  });
+}
+
+/**
  * Call Claude and parse a JSON object out of the response.
  * Tolerant of code fences and stray prose around the JSON.
  */

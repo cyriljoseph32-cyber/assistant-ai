@@ -1,8 +1,8 @@
 {
-  "name": "samui-ai-assistant",
-  "version": "0.1.0",
+  "name": "coco",
+  "version": "0.2.0",
   "private": true,
-  "description": "AI WhatsApp assistant + lightweight CRM for Koh Samui service businesses (dive centers, tour operators, villas, spas, transport).",
+  "description": "Coco — the AI front desk for service businesses: WhatsApp/email AI receptionist, owner copilot console, and lightweight CRM.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
