@@ -1,5 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/app/api/assistant/chat/route.ts": { "memory": 2048 },
+    "src/app/api/reply/route.ts": { "memory": 2048 },
+    "src/app/api/webhooks/whatsapp/route.ts": { "memory": 2048 },
+    "src/app/api/cron/email/route.ts": { "memory": 2048 },
+    "src/app/api/cron/followups/route.ts": { "memory": 2048 },
+    "src/app/api/cron/daily-report/route.ts": { "memory": 2048 }
+  },
   "crons": [
     {
       "path": "/api/cron/followups",
@@ -11,7 +19,7 @@
     },
     {
       "path": "/api/cron/email",
-      "schedule": "0 8 * * *"
+      "schedule": "*/15 * * * *"
     }
   ]
 }

@@ -12,6 +12,7 @@ import { runReviewRequests } from "@/services/review.service";
 import { env } from "@/lib/config";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 function authorized(req: NextRequest): boolean {
