@@ -17,6 +17,7 @@ import { requireAuth } from "@/lib/auth";
 import type { Contact } from "@/lib/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const Body = z.object({
   contact_id: z.string().uuid(),

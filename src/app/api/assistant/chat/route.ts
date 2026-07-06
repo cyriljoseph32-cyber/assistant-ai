@@ -15,6 +15,7 @@ import { getBusiness } from "@/services/crm.service";
 import { buildDailyReport } from "@/services/report.service";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const Body = z.object({
