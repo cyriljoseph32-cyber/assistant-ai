@@ -8,10 +8,13 @@ import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { updateLead } from "@/services/crm.service";
 import { env } from "@/lib/config";
+import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  const denied = requireAuth(req);
+  if (denied) return denied;
   const status = req.nextUrl.searchParams.get("status");
   let q = supabase
     .from("leads")
@@ -34,6 +37,8 @@ const Patch = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
+  const denied = requireAuth(req);
+  if (denied) return denied;
   const parsed = Patch.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

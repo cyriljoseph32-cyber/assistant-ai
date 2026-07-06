@@ -10,11 +10,14 @@ import { supabase } from "@/lib/supabase";
 import { escalate } from "@/services/escalation.service";
 import { getBusiness } from "@/services/crm.service";
 import { env } from "@/lib/config";
+import { requireAuth } from "@/lib/auth";
 import type { Contact } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = requireAuth(req);
+  if (denied) return denied;
   const { data, error } = await supabase
     .from("escalations")
     .select("*, contacts(name, whatsapp)")
@@ -33,6 +36,8 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const denied = requireAuth(req);
+  if (denied) return denied;
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -62,6 +67,8 @@ export async function POST(req: NextRequest) {
 const Patch = z.object({ id: z.string().uuid(), resolved: z.boolean() });
 
 export async function PATCH(req: NextRequest) {
+  const denied = requireAuth(req);
+  if (denied) return denied;
   const parsed = Patch.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

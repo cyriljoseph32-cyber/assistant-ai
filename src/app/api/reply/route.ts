@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { sendWhatsApp } from "@/lib/twilio";
 import { getOrCreateConversation, logMessage, logAutomation } from "@/services/crm.service";
 import { env } from "@/lib/config";
+import { requireAuth } from "@/lib/auth";
 import type { Contact } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -25,9 +26,8 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get("x-dashboard-password") !== env.dashboardPassword) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const denied = requireAuth(req);
+  if (denied) return denied;
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {

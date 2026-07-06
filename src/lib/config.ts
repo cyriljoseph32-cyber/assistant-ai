@@ -51,6 +51,9 @@ export const env = {
   get ownerWhatsApp() {
     return optional("OWNER_WHATSAPP");
   },
+  get ownerEmail() {
+    return optional("OWNER_EMAIL", "cyril.joseph@coco-samui-ai.com");
+  },
   get cronSecret() {
     return optional("CRON_SECRET");
   },

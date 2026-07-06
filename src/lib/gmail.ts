@@ -1,6 +1,6 @@
 // ===========================================================================
 // Gmail client (OAuth2 refresh-token flow). Lets the app read unread emails
-// and send replies from the owner's Gmail (e.g. CYRIL.JOSEPH32@gmail.com).
+// and send replies from the owner's mailbox (e.g. cyril.joseph@coco-samui-ai.com).
 // Lazily initialised; needs GMAIL_CLIENT_ID / GMAIL_CLIENT_SECRET /
 // GMAIL_REFRESH_TOKEN in the environment.
 // ===========================================================================
@@ -117,6 +117,12 @@ export async function sendEmail(opts: {
   const subject = opts.subject.startsWith("Re:") ? opts.subject : `Re: ${opts.subject}`;
   const lines = [
     `To: ${opts.to}`,
+    // Send/appear as the business mailbox. `From` is honoured when ownerEmail is
+    // the authenticated mailbox or a verified send-as alias on it; otherwise
+    // Gmail keeps the authenticated address. `Reply-To` is always respected, so
+    // customer replies land in the business inbox regardless.
+    `From: ${env.ownerEmail}`,
+    `Reply-To: ${env.ownerEmail}`,
     `Subject: ${subject}`,
     "Content-Type: text/plain; charset=UTF-8",
   ];

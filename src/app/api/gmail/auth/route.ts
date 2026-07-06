@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     access_type: "offline",
     prompt: "consent", // force a refresh_token even on re-consent
     scope: GMAIL_SCOPES,
-    login_hint: "cyril.joseph32@gmail.com",
+    login_hint: env.ownerEmail,
   });
   return NextResponse.redirect(url);
 }

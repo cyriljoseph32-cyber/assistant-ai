@@ -1,5 +1,5 @@
 // ===========================================================================
-// Production prompts for the Samui AI Assistant.
+// Production prompts for Coco — the AI front desk.
 // All prompts are built from the live Business record so one codebase serves
 // any client (dive center, tour operator, villa, spa, transport...).
 // Tone: professional, friendly, clear, short, human — hospitality style.

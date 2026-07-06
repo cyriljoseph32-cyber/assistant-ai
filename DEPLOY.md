@@ -103,13 +103,13 @@ answer WhatsApp messages, you still need:
 
 ### c) Gmail email channel (optional) — ~10 min
 
-Lets the assistant read + answer emails sent to **cyril.joseph32@gmail.com**
+Lets the assistant read + answer emails sent to **cyril.joseph@coco-samui-ai.com**
 (`/api/cron/email` polls every 15 min).
 
 1. https://console.cloud.google.com → create/select a project → **APIs &
    Services → Library** → enable **Gmail API**.
 2. **OAuth consent screen** → External → app name anything → add
-   `cyril.joseph32@gmail.com` under **Test users**.
+   `cyril.joseph@coco-samui-ai.com` under **Test users**.
 3. **Credentials → Create credentials → OAuth client ID → Web application** →
    Authorized redirect URIs:
    - `https://<your-app>.vercel.app/api/gmail/callback`
@@ -117,12 +117,12 @@ Lets the assistant read + answer emails sent to **cyril.joseph32@gmail.com**
 4. Add `GMAIL_CLIENT_ID` + `GMAIL_CLIENT_SECRET` to Vercel env vars, redeploy.
 5. In Chrome, open
    `https://<your-app>.vercel.app/api/gmail/auth?key=<DASHBOARD_PASSWORD>`,
-   sign in with `cyril.joseph32@gmail.com` and approve. The page shows the
+   sign in with `cyril.joseph@coco-samui-ai.com` and approve. The page shows the
    **refresh token**.
 6. Add it as `GMAIL_REFRESH_TOKEN` in Vercel, redeploy.
 7. Verify:
    `https://<your-app>.vercel.app/api/gmail/status?key=<DASHBOARD_PASSWORD>`
-   → `{"connected":true,"email":"cyril.joseph32@gmail.com",...}`.
+   → `{"connected":true,"email":"cyril.joseph@coco-samui-ai.com",...}`.
 
 > Vercel **Hobby** plan allows only daily crons — if the 15-min email cron is
 > rejected, change its schedule in `vercel.json` to `0 8 * * *` and use the

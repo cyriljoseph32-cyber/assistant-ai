@@ -1,5 +1,5 @@
 -- ===========================================================================
--- Samui AI Assistant — Database schema (Supabase / Postgres)
+-- Coco — AI front desk — Database schema (Supabase / Postgres)
 -- Run this in: Supabase Dashboard → SQL Editor → New query → Run.
 -- Safe to re-run: uses "if not exists" and idempotent enums.
 -- ===========================================================================
