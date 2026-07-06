@@ -1,6 +1,6 @@
 // ===========================================================================
 // Gmail client (OAuth2 refresh-token flow). Lets the app read unread emails
-// and send replies from the owner's Gmail (e.g. CYRIL.JOSEPH32@gmail.com).
+// and send replies from the owner's mailbox (e.g. cyril.joseph@coco-samui-ai.com).
 // Lazily initialised; needs GMAIL_CLIENT_ID / GMAIL_CLIENT_SECRET /
 // GMAIL_REFRESH_TOKEN in the environment.
 // ===========================================================================

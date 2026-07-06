@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Monogram } from "@/components/icons";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function LoginPage() {
     }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
-      router.replace("/");
+      router.replace("/assistant");
       router.refresh();
     } else {
       setError("That password didn't work. Try again.");
@@ -31,11 +32,11 @@ export default function LoginPage() {
     <div className="login-wrap">
       <form className="card login-card fadeup" onSubmit={submit}>
         <div className="login-brand">
-          <span className="brand-mark">C</span> Coco
+          <Monogram size={28} /> <span className="wordmark">Coco</span>
         </div>
         <p className="login-tag">
-          Your AI front desk. It answers customers, books trips, and flags what
-          needs you — this console is where you work with it.
+          Your AI front desk. It answers customers, captures bookings, and flags
+          what needs you — this console is where you work with it.
         </p>
         {error && <div className="error-note">{error}</div>}
         <div className="field">

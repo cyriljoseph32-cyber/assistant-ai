@@ -1,6 +1,6 @@
-# Samui AI Assistant — MVP
+# Coco — AI front desk (MVP)
 
-An AI WhatsApp assistant + lightweight CRM for Koh Samui service businesses
+An AI WhatsApp + email front desk with a lightweight CRM for service businesses (built for Koh Samui).
 (dive centers, tour operators, villa managers, spas, transport, restaurants).
 
 It answers WhatsApp messages with Claude, detects intent and language, captures

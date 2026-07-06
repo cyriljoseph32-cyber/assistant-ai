@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { CommandK } from "./CommandK";
 import {
+  Monogram,
   SparkIcon,
   InboxIcon,
   UsersIcon,
@@ -16,7 +17,7 @@ import {
 } from "./icons";
 
 const NAV = [
-  { href: "/", label: "Assistant", icon: SparkIcon },
+  { href: "/assistant", label: "Assistant", icon: SparkIcon },
   { href: "/inbox", label: "Inbox", icon: InboxIcon },
   { href: "/leads", label: "Leads", icon: UsersIcon },
   { href: "/bookings", label: "Bookings", icon: CalendarIcon },
@@ -30,7 +31,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/assistant"
+      ? pathname === "/assistant"
+      : pathname.startsWith(href);
 
   async function logout() {
     await fetch("/api/auth", { method: "DELETE" });
@@ -41,9 +44,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-mark">C</span> Coco
-        </div>
+        <Link href="/assistant" className="brand">
+          <Monogram size={26} /> <span className="wordmark">Coco</span>
+        </Link>
         <button className="search-trigger" onClick={() => setSearchOpen(true)}>
           <SearchIcon size={15} /> Search
           <span className="kbd">⌘K</span>

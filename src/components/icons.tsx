@@ -2,6 +2,24 @@
 
 type P = { size?: number };
 
+// Coco monogram — a crafted "C" mark. Filled disc + inset counter so it reads
+// as a considered logo, not a letter in a box. Used everywhere the brand shows.
+export function Monogram({ size = 26 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
+      <rect width="32" height="32" rx="9" fill="currentColor" />
+      <path
+        d="M22 11.4a7 7 0 100 9.2"
+        fill="none"
+        stroke="var(--accent-ink)"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <circle cx="21.4" cy="16" r="1.5" fill="var(--premium)" />
+    </svg>
+  );
+}
+
 function I({ size = 17, children }: P & { children: React.ReactNode }) {
   return (
     <svg
