@@ -117,6 +117,12 @@ export async function sendEmail(opts: {
   const subject = opts.subject.startsWith("Re:") ? opts.subject : `Re: ${opts.subject}`;
   const lines = [
     `To: ${opts.to}`,
+    // Send/appear as the business mailbox. `From` is honoured when ownerEmail is
+    // the authenticated mailbox or a verified send-as alias on it; otherwise
+    // Gmail keeps the authenticated address. `Reply-To` is always respected, so
+    // customer replies land in the business inbox regardless.
+    `From: ${env.ownerEmail}`,
+    `Reply-To: ${env.ownerEmail}`,
     `Subject: ${subject}`,
     "Content-Type: text/plain; charset=UTF-8",
   ];

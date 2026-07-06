@@ -26,19 +26,19 @@ function page(title: string, body: string, status = 200): NextResponse {
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const err = req.nextUrl.searchParams.get("error");
-  if (err) return page("Gmail : refusé", `<p>Google a renvoyé : <code>${err}</code></p>`, 400);
-  if (!code) return page("Gmail : code manquant", "<p>Paramètre <code>code</code> absent.</p>", 400);
+  if (err) return page("Gmail: denied", `<p>Google returned: <code>${err}</code></p>`, 400);
+  if (!code) return page("Gmail: missing code", "<p>Missing <code>code</code> parameter.</p>", 400);
 
   try {
     const oauth2 = new google.auth.OAuth2(env.gmailClientId, env.gmailClientSecret, oauthRedirectUri());
     const { tokens } = await oauth2.getToken(code);
     if (!tokens.refresh_token) {
       return page(
-        "Gmail : pas de refresh token",
-        `<p>Google n'a pas renvoyé de refresh token (compte déjà autorisé sans
-         <code>prompt=consent</code>). Retire l'accès sur
+        "Gmail: no refresh token",
+        `<p>Google didn't return a refresh token (this account was already
+         authorized without <code>prompt=consent</code>). Remove access at
          <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>
-         puis relance <code>/api/gmail/auth</code>.</p>`,
+         then start <code>/api/gmail/auth</code> again.</p>`,
         400
       );
     }
@@ -49,16 +49,16 @@ export async function GET(req: NextRequest) {
     const profile = await gmail.users.getProfile({ userId: "me" });
 
     return page(
-      "Gmail connecté ✔",
-      `<p>Boîte autorisée : <b>${profile.data.emailAddress}</b>
+      "Gmail connected ✔",
+      `<p>Authorized mailbox: <b>${profile.data.emailAddress}</b>
        (${profile.data.messagesTotal} messages).</p>
-       <p>Ajoute cette variable d'environnement (Vercel → Settings → Environment
-       Variables, puis redéploie) :</p>
+       <p>Add this environment variable (Vercel → Settings → Environment
+       Variables, then redeploy):</p>
        <p><code>GMAIL_REFRESH_TOKEN</code></p>
        <textarea rows="4" style="width:100%" readonly onclick="this.select()">${tokens.refresh_token}</textarea>
-       <p>Ensuite vérifie avec <code>/api/gmail/status?key=&lt;DASHBOARD_PASSWORD&gt;</code>.</p>`
+       <p>Then verify with <code>/api/gmail/status?key=&lt;DASHBOARD_PASSWORD&gt;</code>.</p>`
     );
   } catch (e) {
-    return page("Gmail : échec de l'échange", `<pre>${String(e)}</pre>`, 500);
+    return page("Gmail: token exchange failed", `<pre>${String(e)}</pre>`, 500);
   }
 }
