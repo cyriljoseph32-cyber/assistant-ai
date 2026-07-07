@@ -5,16 +5,18 @@
 // REQUIRED var only throws when a request actually needs it.
 // ===========================================================================
 
+// Always trim: pasting a value into a hosting dashboard often appends a stray
+// newline/space, which silently breaks things like UUID casts (BUSINESS_ID).
 function required(name: string): string {
-  const v = process.env[name];
-  if (!v || v.trim() === "") {
+  const v = process.env[name]?.trim();
+  if (!v) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
   return v;
 }
 
 function optional(name: string, fallback = ""): string {
-  return process.env[name] ?? fallback;
+  return (process.env[name] ?? fallback).trim();
 }
 
 export const env = {
