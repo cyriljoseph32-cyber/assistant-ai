@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const status = req.nextUrl.searchParams.get("status");
   let q = supabase
     .from("leads")
-    .select("*, contacts(name, whatsapp)")
+    .select("*, contacts(name, whatsapp, email)")
     .eq("business_id", env.businessId)
     .order("last_message_at", { ascending: false })
     .limit(200);

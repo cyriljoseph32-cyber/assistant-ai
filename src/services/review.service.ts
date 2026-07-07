@@ -31,6 +31,8 @@ export async function sendReviewRequest(bookingId: string): Promise<boolean> {
   if (!contact) return false;
   const c = contact as Contact;
 
+  // Review requests go out on WhatsApp only; skip email-only contacts.
+  if (!c.whatsapp) return false;
   await sendWhatsApp(c.whatsapp, reviewRequestMessage(business, c.name ?? undefined));
 
   await supabase

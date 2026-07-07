@@ -43,7 +43,8 @@ export async function createBookingRequest(params: {
   // Notify owner so they can confirm availability.
   if (business.owner_whatsapp) {
     const b = data as Booking;
-    const who = contact.name ? `${contact.name} (${contact.whatsapp})` : contact.whatsapp;
+    const reach = contact.whatsapp ?? contact.email ?? "unknown";
+    const who = contact.name ? `${contact.name} (${reach})` : reach;
     const note = `📋 New booking request — ${business.name}\nFrom: ${who}\nService: ${b.service_name ?? "—"}\nDate: ${b.date ?? "—"}  Time: ${b.time ?? "—"}\nPax: ${b.pax ?? "—"}  Pickup: ${b.pickup ?? "—"}\n\nConfirm availability, then reply to the customer.`;
     try {
       await sendWhatsApp(business.owner_whatsapp, note);

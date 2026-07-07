@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   const { data: conversations, error } = await supabase
     .from("conversations")
-    .select("id, status, channel, language, last_message_at, contact_id, contacts(name, whatsapp)")
+    .select("id, status, channel, language, last_message_at, contact_id, contacts(name, whatsapp, email)")
     .eq("business_id", env.businessId)
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .limit(50);

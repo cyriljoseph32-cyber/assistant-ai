@@ -30,15 +30,16 @@ export async function escalate(params: {
     .update({ status: "escalated" })
     .eq("id", conversationId);
 
+  const reach = contact.whatsapp ?? contact.email ?? "unknown";
   await logAutomation(business.id, "escalation_created", {
     reason,
-    contact: contact.whatsapp,
+    contact: reach,
   });
 
   // Notify the owner on WhatsApp.
   const owner = business.owner_whatsapp;
   if (owner) {
-    const who = contact.name ? `${contact.name} (${contact.whatsapp})` : contact.whatsapp;
+    const who = contact.name ? `${contact.name} (${reach})` : reach;
     const note = `🚨 ${business.name} — needs your attention\nReason: ${reason}\nFrom: ${who}\nMessage: "${message}"\n\nReply to them directly on WhatsApp.`;
     try {
       await sendWhatsApp(owner, note);

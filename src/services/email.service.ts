@@ -8,33 +8,18 @@
 import { supabase } from "@/lib/supabase";
 import { gmailConfigured, getEmail, listUnread, markRead, sendEmail } from "@/lib/gmail";
 import { detectIntent, generateReply } from "./ai.service";
-import { getBusiness, getRecentMessages, logAutomation, logMessage, updateLead } from "./crm.service";
+import {
+  getBusiness,
+  getOrCreateLead,
+  getRecentMessages,
+  logAutomation,
+  logMessage,
+  updateLead,
+  upsertContactByEmail,
+} from "./crm.service";
 import { escalate } from "./escalation.service";
 import { env } from "@/lib/config";
-import type { Contact, Conversation, Lead } from "@/lib/types";
-
-/** Upsert a contact identified by email (whatsapp may be null for email-only). */
-async function upsertEmailContact(
-  businessId: string,
-  email: string,
-  name?: string | null
-): Promise<Contact> {
-  const { data: existing } = await supabase
-    .from("contacts")
-    .select("*")
-    .eq("business_id", businessId)
-    .eq("email", email)
-    .maybeSingle();
-  if (existing) return existing as Contact;
-
-  const { data, error } = await supabase
-    .from("contacts")
-    .insert({ business_id: businessId, email, name: name ?? null })
-    .select("*")
-    .single();
-  if (error) throw error;
-  return data as Contact;
-}
+import type { Conversation } from "@/lib/types";
 
 async function getOrCreateEmailConversation(
   businessId: string,
@@ -61,26 +46,6 @@ async function getOrCreateEmailConversation(
   return data as Conversation;
 }
 
-async function getOrCreateLead(businessId: string, contactId: string): Promise<Lead> {
-  const { data: existing } = await supabase
-    .from("leads")
-    .select("*")
-    .eq("business_id", businessId)
-    .eq("contact_id", contactId)
-    .not("status", "in", "(won,lost)")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (existing) return existing as Lead;
-  const { data, error } = await supabase
-    .from("leads")
-    .insert({ business_id: businessId, contact_id: contactId, source: "email" })
-    .select("*")
-    .single();
-  if (error) throw error;
-  return data as Lead;
-}
-
 export async function processInbox(
   businessId = env.businessId,
   max = 10
@@ -104,9 +69,9 @@ export async function processInbox(
         continue;
       }
 
-      const contact = await upsertEmailContact(businessId, mail.fromEmail, mail.fromName);
+      const contact = await upsertContactByEmail(businessId, mail.fromEmail, mail.fromName);
       const conversation = await getOrCreateEmailConversation(businessId, contact.id);
-      const lead = await getOrCreateLead(businessId, contact.id);
+      const lead = await getOrCreateLead(businessId, contact.id, "email");
 
       const history = await getRecentMessages(conversation.id);
       await logMessage({
@@ -151,7 +116,7 @@ export async function processInbox(
         conversationId: conversation.id,
         contactId: contact.id,
         direction: "outbound",
-        sender: escalateThis ? "human" : "ai",
+        sender: "ai",
         body: reply,
         intent: intent.intent,
       });

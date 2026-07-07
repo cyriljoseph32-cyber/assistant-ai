@@ -98,7 +98,7 @@ export async function handleInboundMessage(
       reply = "Thanks for your message! Let me check this with our team and get right back to you. 🙏";
     }
 
-    await sendWhatsApp(contact.whatsapp, reply);
+    await sendWhatsApp(msg.fromWhatsApp, reply);
     await logMessage({
       businessId,
       conversationId: conversation.id,
@@ -142,7 +142,7 @@ export async function handleInboundMessage(
 
   // 5) Generate the normal reply.
   const reply = await generateReply(business, intent, history, msg.body);
-  await sendWhatsApp(contact.whatsapp, reply);
+  await sendWhatsApp(msg.fromWhatsApp, reply);
   await logMessage({
     businessId,
     conversationId: conversation.id,

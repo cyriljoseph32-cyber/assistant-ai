@@ -58,7 +58,7 @@ export interface Contact {
   id: string;
   business_id: string;
   name: string | null;
-  whatsapp: string;
+  whatsapp: string | null;
   email: string | null;
   language: string | null;
   notes: string | null;

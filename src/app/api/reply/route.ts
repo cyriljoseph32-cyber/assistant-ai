@@ -1,20 +1,21 @@
 // ===========================================================================
 // POST /api/reply
-// Human takeover: the owner sends a WhatsApp reply to a customer straight from
-// the dashboard, logs it, and (optionally) resolves the escalation + reopens
-// the conversation. Guarded by the dashboard password header.
-//   header: x-dashboard-password: <DASHBOARD_PASSWORD>
-//   body:   { contact_id, conversation_id?, body, resolve_escalation_id? }
+// Human takeover: the owner replies to a customer straight from the console.
+// The reply goes out on the conversation's channel (WhatsApp via Twilio, or
+// email via Gmail), is logged, and (optionally) resolves the escalation +
+// reopens the conversation. Guarded by the dashboard session/password.
+//   body: { contact_id, conversation_id?, body, resolve_escalation_id? }
 // ===========================================================================
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { sendWhatsApp } from "@/lib/twilio";
-import { getOrCreateConversation, logMessage, logAutomation } from "@/services/crm.service";
+import { sendEmail } from "@/lib/gmail";
+import { getBusiness, getOrCreateConversation, logMessage, logAutomation } from "@/services/crm.service";
 import { env } from "@/lib/config";
 import { requireAuth } from "@/lib/auth";
-import type { Contact } from "@/lib/types";
+import type { Contact, Conversation } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -47,18 +48,35 @@ export async function POST(req: NextRequest) {
   }
   const c = contact as Contact;
 
-  // Resolve the conversation to log against.
-  let convId = conversation_id;
-  if (!convId) {
-    const conv = await getOrCreateConversation(env.businessId, c.id);
-    convId = conv.id;
+  // Resolve the conversation to log against (its channel decides how we send).
+  let conv: Conversation | null = null;
+  if (conversation_id) {
+    const { data } = await supabase
+      .from("conversations")
+      .select("*")
+      .eq("id", conversation_id)
+      .eq("business_id", env.businessId)
+      .maybeSingle();
+    conv = data as Conversation | null;
   }
+  if (!conv) {
+    conv = await getOrCreateConversation(env.businessId, c.id);
+  }
+  const convId = conv.id;
+  const channel = conv.channel === "email" ? "email" : "whatsapp";
+  const reach = c.whatsapp ?? c.email ?? "unknown";
 
-  // Send the WhatsApp message.
+  // Send on the conversation's channel.
   try {
-    await sendWhatsApp(c.whatsapp, body);
+    if (channel === "email") {
+      if (!c.email) throw new Error("contact has no email address");
+      await sendEmail({ to: c.email, subject: await emailSubject(convId), body });
+    } else {
+      if (!c.whatsapp) throw new Error("contact has no WhatsApp number");
+      await sendWhatsApp(c.whatsapp, body);
+    }
   } catch (e) {
-    await logAutomation(env.businessId, "human_reply_failed", { error: String(e), contact: c.whatsapp }, "error");
+    await logAutomation(env.businessId, "human_reply_failed", { error: String(e), channel, contact: reach }, "error");
     return NextResponse.json({ error: "send failed: " + String(e) }, { status: 502 });
   }
 
@@ -82,6 +100,22 @@ export async function POST(req: NextRequest) {
       .eq("business_id", env.businessId);
   }
 
-  await logAutomation(env.businessId, "human_reply_sent", { contact: c.whatsapp });
-  return NextResponse.json({ ok: true });
+  await logAutomation(env.businessId, "human_reply_sent", { channel, contact: reach });
+  return NextResponse.json({ ok: true, channel });
+}
+
+/** Subject for a human email reply: reuse the last inbound "[Email] <subject>". */
+async function emailSubject(conversationId: string): Promise<string> {
+  const { data } = await supabase
+    .from("messages")
+    .select("body")
+    .eq("conversation_id", conversationId)
+    .eq("direction", "inbound")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const match = data?.body?.match(/^\[Email\] (.+)/);
+  if (match) return match[1].trim();
+  const business = await getBusiness(env.businessId).catch(() => null);
+  return business ? `Your enquiry with ${business.name}` : "Your enquiry";
 }

@@ -14,7 +14,7 @@ interface BookingRow {
   pax: number | null;
   pickup: string | null;
   notes: string | null;
-  contacts: { name: string | null; whatsapp: string } | null;
+  contacts: { name: string | null; whatsapp: string | null; email: string | null } | null;
 }
 
 export default function BookingsPage() {
@@ -132,7 +132,7 @@ function BookingTable({
               </td>
               <td>
                 <div>{b.contacts?.name ?? "Unknown"}</div>
-                <div className="faint mono" style={{ fontSize: 12 }}>{b.contacts?.whatsapp}</div>
+                <div className="faint mono" style={{ fontSize: 12 }}>{b.contacts?.whatsapp ?? b.contacts?.email}</div>
               </td>
               <td className="muted num">
                 {b.date ?? "—"}{b.time ? ` · ${b.time}` : ""}

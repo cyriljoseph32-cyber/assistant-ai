@@ -22,19 +22,19 @@ export async function GET(req: NextRequest) {
   const [leads, bookings, escalations, report] = await Promise.all([
     supabase
       .from("leads")
-      .select("*, contacts(name, whatsapp)")
+      .select("*, contacts(name, whatsapp, email)")
       .eq("business_id", bid)
       .order("last_message_at", { ascending: false })
       .limit(50),
     supabase
       .from("bookings")
-      .select("*, contacts(name, whatsapp)")
+      .select("*, contacts(name, whatsapp, email)")
       .eq("business_id", bid)
       .order("created_at", { ascending: false })
       .limit(50),
     supabase
       .from("escalations")
-      .select("*, contacts(name, whatsapp)")
+      .select("*, contacts(name, whatsapp, email)")
       .eq("business_id", bid)
       .eq("resolved", false)
       .order("created_at", { ascending: false })

@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     await Promise.all([
       supabase
         .from("escalations")
-        .select("*, contacts(name, whatsapp)")
+        .select("*, contacts(name, whatsapp, email)")
         .eq("business_id", bid)
         .order("created_at", { ascending: false })
         .limit(100),

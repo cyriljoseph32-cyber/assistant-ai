@@ -105,13 +105,21 @@ export async function runDueFollowUps(): Promise<{ sent: number }> {
         continue;
       }
 
+      // Follow-ups go out on WhatsApp only; email-only contacts have none.
+      const to = (contact as Contact).whatsapp;
+      if (!to) {
+        await supabase.from("follow_ups").update({ status: "cancelled" }).eq("id", fu.id);
+        await logAutomation(fu.business_id, "followup_skipped", { id: fu.id, reason: "no whatsapp" }, "warn");
+        continue;
+      }
+
       const body = followUpMessage(
         business,
         fu.step,
         (lead as Lead).interest ?? undefined,
         (contact as Contact).name ?? undefined
       );
-      await sendWhatsApp((contact as Contact).whatsapp, body);
+      await sendWhatsApp(to, body);
 
       await supabase
         .from("follow_ups")

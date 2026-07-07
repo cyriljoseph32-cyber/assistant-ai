@@ -57,13 +57,18 @@ create table if not exists contacts (
   id          uuid primary key default gen_random_uuid(),
   business_id uuid not null references businesses(id) on delete cascade,
   name        text,
-  whatsapp    text not null,                    -- E.164
+  whatsapp    text,                             -- E.164; null for email-only contacts
   email       text,
   language    text default 'en',
   notes       text,
   created_at  timestamptz not null default now(),
   unique (business_id, whatsapp)
 );
+
+-- Email channel creates contacts without a WhatsApp number.
+alter table contacts alter column whatsapp drop not null;
+create unique index if not exists idx_contacts_business_email
+  on contacts(business_id, email) where email is not null;
 
 -- --- 3. leads --------------------------------------------------------------
 create table if not exists leads (

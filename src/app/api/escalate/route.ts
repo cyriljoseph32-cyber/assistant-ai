@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
   const { data, error } = await supabase
     .from("escalations")
-    .select("*, contacts(name, whatsapp)")
+    .select("*, contacts(name, whatsapp, email)")
     .eq("business_id", env.businessId)
     .order("created_at", { ascending: false })
     .limit(200);

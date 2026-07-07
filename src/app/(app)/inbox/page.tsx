@@ -11,7 +11,7 @@ interface Conv {
   channel: string;
   last_message_at: string | null;
   contact_id: string;
-  contacts: { name: string | null; whatsapp: string } | null;
+  contacts: { name: string | null; whatsapp: string | null; email: string | null } | null;
   preview: { body: string; sender: string } | null;
 }
 
@@ -104,12 +104,13 @@ function Inbox() {
     }).catch(() => null);
     setSending(false);
     if (res?.ok) {
+      const d = await res.json().catch(() => null);
       setDraft("");
-      showToast("Sent on WhatsApp");
+      showToast(d?.channel === "email" ? "Sent by email" : "Sent on WhatsApp");
       loadThread(selected.id);
     } else {
       const d = await res?.json().catch(() => null);
-      showToast(d?.error ?? "Couldn't send — check Twilio config");
+      showToast(d?.error ?? "Couldn't send — check the channel config");
     }
   }
 
@@ -133,7 +134,7 @@ function Inbox() {
             <EmptyState
               icon={<InboxIcon size={28} />}
               title="No conversations yet"
-              hint="They'll appear as soon as a customer messages your WhatsApp number."
+              hint="They'll appear as soon as a customer messages your WhatsApp number or email."
             />
           ) : (
             convs.map((c) => (
@@ -143,7 +144,7 @@ function Inbox() {
                 onClick={() => router.replace(`/inbox?c=${c.id}`, { scroll: false })}
               >
                 <span className="row">
-                  <span className="name">{c.contacts?.name ?? c.contacts?.whatsapp ?? "Unknown"}</span>
+                  <span className="name">{c.contacts?.name ?? c.contacts?.whatsapp ?? c.contacts?.email ?? "Unknown"}</span>
                   <span className="when">{timeAgo(c.last_message_at)}</span>
                 </span>
                 <span className="row">
@@ -177,7 +178,7 @@ function Inbox() {
                 <div style={{ minWidth: 0 }}>
                   <h3>{selected.contacts?.name ?? "Unknown"}</h3>
                   <span className="faint" style={{ fontSize: 12 }}>
-                    {selected.contacts?.whatsapp} · {selected.channel}
+                    {selected.contacts?.whatsapp ?? selected.contacts?.email} · {selected.channel}
                   </span>
                 </div>
                 <span style={{ marginLeft: "auto" }}>
@@ -210,7 +211,11 @@ function Inbox() {
                 <input
                   className="input"
                   value={draft}
-                  placeholder="Reply as a human — sends from your WhatsApp number"
+                  placeholder={
+                    selected.channel === "email"
+                      ? "Reply as a human — sends from your business email"
+                      : "Reply as a human — sends from your WhatsApp number"
+                  }
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendReply()}
                 />

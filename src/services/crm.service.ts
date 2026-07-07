@@ -60,6 +60,41 @@ export async function upsertContact(
   return data as Contact;
 }
 
+/** Find an existing contact by email (email-only: whatsapp stays null), or create one. */
+export async function upsertContactByEmail(
+  businessId: string,
+  email: string,
+  name?: string | null
+): Promise<Contact> {
+  const { data: existing } = await supabase
+    .from("contacts")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existing) {
+    if (name && !existing.name) {
+      const { data: updated } = await supabase
+        .from("contacts")
+        .update({ name })
+        .eq("id", existing.id)
+        .select("*")
+        .single();
+      return (updated ?? existing) as Contact;
+    }
+    return existing as Contact;
+  }
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .insert({ business_id: businessId, email, name: name ?? null })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as Contact;
+}
+
 /** Get the open conversation for a contact, or start a new one. */
 export async function getOrCreateConversation(
   businessId: string,

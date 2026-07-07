@@ -65,26 +65,26 @@ async function buildSystemPrompt(): Promise<string> {
       buildDailyReport(bid),
       supabase
         .from("leads")
-        .select("status, interest, last_intent, last_message_at, contacts(name, whatsapp)")
+        .select("status, interest, last_intent, last_message_at, contacts(name, whatsapp, email)")
         .eq("business_id", bid)
         .order("last_message_at", { ascending: false })
         .limit(20),
       supabase
         .from("bookings")
-        .select("status, service_name, date, time, pax, pickup, notes, contacts(name, whatsapp)")
+        .select("status, service_name, date, time, pax, pickup, notes, contacts(name, whatsapp, email)")
         .eq("business_id", bid)
         .order("created_at", { ascending: false })
         .limit(20),
       supabase
         .from("escalations")
-        .select("reason, message, created_at, contacts(name, whatsapp)")
+        .select("reason, message, created_at, contacts(name, whatsapp, email)")
         .eq("business_id", bid)
         .eq("resolved", false)
         .order("created_at", { ascending: false })
         .limit(10),
       supabase
         .from("conversations")
-        .select("status, channel, last_message_at, contacts(name, whatsapp)")
+        .select("status, channel, last_message_at, contacts(name, whatsapp, email)")
         .eq("business_id", bid)
         .order("last_message_at", { ascending: false })
         .limit(10),

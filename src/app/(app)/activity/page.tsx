@@ -12,7 +12,7 @@ interface Esc {
   resolved: boolean;
   created_at: string;
   conversation_id: string | null;
-  contacts: { name: string | null; whatsapp: string } | null;
+  contacts: { name: string | null; whatsapp: string | null; email: string | null } | null;
 }
 
 interface Log {
@@ -114,7 +114,7 @@ export default function ActivityPage() {
               <div className="faq-item" key={e.id}>
                 <div className="row" style={{ alignItems: "center" }}>
                   <AlertIcon size={15} />
-                  <span style={{ fontWeight: 550 }}>{e.contacts?.name ?? e.contacts?.whatsapp ?? "Unknown"}</span>
+                  <span style={{ fontWeight: 550 }}>{e.contacts?.name ?? e.contacts?.whatsapp ?? e.contacts?.email ?? "Unknown"}</span>
                   <StatusPill value={e.reason} />
                   <span className="faint" style={{ fontSize: 12 }}>{timeAgo(e.created_at)}</span>
                   <span style={{ marginLeft: "auto", display: "inline-flex", gap: 6 }}>

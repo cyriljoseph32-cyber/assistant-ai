@@ -12,7 +12,7 @@ interface LeadRow {
   interest: string | null;
   last_intent: string | null;
   last_message_at: string | null;
-  contacts: { name: string | null; whatsapp: string } | null;
+  contacts: { name: string | null; whatsapp: string | null; email: string | null } | null;
 }
 
 const STATUSES: LeadStatus[] = ["new", "contacted", "qualified", "won", "lost", "cold"];
@@ -89,7 +89,7 @@ export default function LeadsPage() {
                   <tr key={l.id}>
                     <td>
                       <div style={{ fontWeight: 550 }}>{l.contacts?.name ?? "Unknown"}</div>
-                      <div className="faint mono" style={{ fontSize: 12 }}>{l.contacts?.whatsapp}</div>
+                      <div className="faint mono" style={{ fontSize: 12 }}>{l.contacts?.whatsapp ?? l.contacts?.email}</div>
                     </td>
                     <td className="muted">{l.interest ?? "—"}</td>
                     <td>{l.last_intent ? <StatusPill value={l.last_intent} /> : <span className="faint">—</span>}</td>
