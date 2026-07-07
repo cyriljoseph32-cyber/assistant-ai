@@ -41,17 +41,38 @@ function Inbox() {
   const [msgs, setMsgs] = useState<Msg[] | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [toast, showToast] = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const selected = convs?.find((c) => c.id === selectedId) ?? null;
 
-  useEffect(() => {
-    fetch("/api/conversations")
+  const loadConvs = useCallback(() => {
+    return fetch("/api/conversations")
       .then((r) => r.json())
       .then((d) => setConvs(d.conversations ?? []))
       .catch(() => setConvs([]));
   }, []);
+
+  useEffect(() => {
+    loadConvs();
+  }, [loadConvs]);
+
+  // Poll Gmail now instead of waiting for the 15-min cron.
+  async function checkEmail() {
+    setChecking(true);
+    const res = await fetch("/api/cron/email").catch(() => null);
+    const d = await res?.json().catch(() => null);
+    setChecking(false);
+    if (res?.ok) {
+      showToast(
+        `Emails : ${d.processed ?? 0} lus, ${d.replied ?? 0} répondus, ${d.escalated ?? 0} escaladés`
+      );
+      await loadConvs();
+    } else {
+      showToast(d?.error ? String(d.error) : "Relève impossible — vérifie la connexion Gmail");
+    }
+  }
 
   const loadThread = useCallback((id: string) => {
     setMsgs(null);
@@ -99,6 +120,9 @@ function Inbox() {
           <h1>Inbox</h1>
           <p className="sub">Every customer conversation, with the AI&apos;s replies attributed. Jump in any time.</p>
         </div>
+        <button className="btn btn-primary" onClick={checkEmail} disabled={checking}>
+          <InboxIcon size={14} /> {checking ? "Relève…" : "Relève des emails"}
+        </button>
       </div>
 
       <div className={`inbox${selectedId ? " show-thread" : ""}`}>

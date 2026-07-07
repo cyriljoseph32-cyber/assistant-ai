@@ -8,14 +8,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processInbox } from "@/services/email.service";
 import { env } from "@/lib/config";
+import { isAuthed } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 function authorized(req: NextRequest): boolean {
-  // Dashboard manual trigger
-  if (req.headers.get("x-dashboard-password") === env.dashboardPassword) return true;
+  // Console manual trigger: logged-in session cookie or legacy password header
+  if (isAuthed(req)) return true;
   // Vercel cron
   if (!env.cronSecret) return true;
   const header = req.headers.get("authorization") ?? "";
