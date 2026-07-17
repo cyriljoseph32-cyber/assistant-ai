@@ -17,7 +17,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");
-  if (key !== env.dashboardPassword && !isAuthed(req)) {
+  const keyOk = Boolean(env.dashboardPassword && key === env.dashboardPassword);
+  if (!keyOk && !isAuthed(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

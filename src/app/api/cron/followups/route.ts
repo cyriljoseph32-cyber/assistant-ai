@@ -13,7 +13,7 @@ export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 function authorized(req: NextRequest): boolean {
-  if (!env.cronSecret) return true; // not configured (dev)
+  if (!env.cronSecret) return false; // not configured -> fail closed
   const header = req.headers.get("authorization") ?? "";
   const qsSecret = req.nextUrl.searchParams.get("secret");
   return header === `Bearer ${env.cronSecret}` || qsSecret === env.cronSecret;

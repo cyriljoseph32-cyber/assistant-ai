@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { streamText } from "@/lib/anthropic";
 import { requireAuth } from "@/lib/auth";
 import { env } from "@/lib/config";
+import { rateLimit } from "@/lib/ratelimit";
 import { getBusiness } from "@/services/crm.service";
 import { buildDailyReport } from "@/services/report.service";
 
@@ -34,6 +35,14 @@ export async function POST(req: NextRequest) {
   const denied = requireAuth(req);
   if (denied) return denied;
 
+  // Single-tenant: one global bucket is enough to cap Claude spend.
+  if (!rateLimit("assistant-chat", 30, 60_000)) {
+    return NextResponse.json(
+      { error: "too many messages — give it a minute" },
+      { status: 429 }
+    );
+  }
+
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -43,10 +52,8 @@ export async function POST(req: NextRequest) {
   try {
     system = await buildSystemPrompt();
   } catch (e) {
-    return NextResponse.json(
-      { error: "assistant unavailable: " + String(e) },
-      { status: 503 }
-    );
+    console.error("assistant snapshot failed:", e);
+    return NextResponse.json({ error: "assistant unavailable" }, { status: 503 });
   }
 
   return new Response(streamText({ system, messages: parsed.data.messages }), {

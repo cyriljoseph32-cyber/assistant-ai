@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  if (req.nextUrl.searchParams.get("key") !== env.dashboardPassword) {
+  if (!env.dashboardPassword || req.nextUrl.searchParams.get("key") !== env.dashboardPassword) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!env.gmailClientId || !env.gmailClientSecret) {
