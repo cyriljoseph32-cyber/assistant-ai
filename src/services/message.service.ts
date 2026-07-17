@@ -32,6 +32,9 @@ export interface InboundMessage {
   providerSid?: string; // Twilio "MessageSid"
 }
 
+const HOLDING_REPLY =
+  "Thanks for your message! Let me check this with our team and get right back to you. 🙏";
+
 export interface HandleResult {
   status: "ok" | "duplicate" | "escalated";
   reply?: string;
@@ -90,12 +93,28 @@ export async function handleInboundMessage(
 
   // 4) Escalation path — hand to a human, send a holding reply.
   if (intent.escalate || intent.intent === "complaint" || intent.intent === "urgent") {
-    // For complaints we still send a calming AI reply; for low-confidence we send a holding line.
-    let reply: string;
+    // Escalate BEFORE attempting the AI reply: if Claude is down, the owner
+    // must still be notified — complaints are the messages we can't drop.
+    await escalate({
+      business,
+      conversationId: conversation.id,
+      contact,
+      reason:
+        intent.intent === "complaint" || intent.intent === "urgent"
+          ? intent.intent
+          : "low_confidence",
+      message: msg.body,
+    });
+
+    // For complaints we still send a calming AI reply; for low-confidence we
+    // send a holding line. If generation fails, fall back to the holding line.
+    let reply = HOLDING_REPLY;
     if (intent.intent === "complaint" || intent.intent === "urgent") {
-      reply = await generateReply(business, intent, history, msg.body);
-    } else {
-      reply = "Thanks for your message! Let me check this with our team and get right back to you. 🙏";
+      try {
+        reply = await generateReply(business, intent, history, msg.body);
+      } catch (e) {
+        await logAutomation(businessId, "ai_error", { stage: "escalation_reply", error: String(e) }, "error");
+      }
     }
 
     await sendWhatsApp(contact.whatsapp, reply);
@@ -108,17 +127,6 @@ export async function handleInboundMessage(
       body: reply,
       intent: intent.intent,
       language: intent.language,
-    });
-
-    await escalate({
-      business,
-      conversationId: conversation.id,
-      contact,
-      reason:
-        intent.intent === "complaint" || intent.intent === "urgent"
-          ? intent.intent
-          : "low_confidence",
-      message: msg.body,
     });
 
     return { status: "escalated", reply };
@@ -140,8 +148,22 @@ export async function handleInboundMessage(
     }
   }
 
-  // 5) Generate the normal reply.
-  const reply = await generateReply(business, intent, history, msg.body);
+  // 5) Generate the normal reply. If the AI is unavailable, the customer
+  // still gets a holding line and the owner gets an escalation — never silence.
+  let reply: string;
+  try {
+    reply = await generateReply(business, intent, history, msg.body);
+  } catch (e) {
+    await logAutomation(businessId, "ai_error", { stage: "reply", error: String(e) }, "error");
+    await escalate({
+      business,
+      conversationId: conversation.id,
+      contact,
+      reason: "low_confidence",
+      message: msg.body,
+    });
+    reply = HOLDING_REPLY;
+  }
   await sendWhatsApp(contact.whatsapp, reply);
   await logMessage({
     businessId,

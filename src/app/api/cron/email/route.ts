@@ -18,7 +18,7 @@ function authorized(req: NextRequest): boolean {
   // Console manual trigger: logged-in session cookie or legacy password header
   if (isAuthed(req)) return true;
   // Vercel cron
-  if (!env.cronSecret) return true;
+  if (!env.cronSecret) return false; // not configured -> fail closed
   const header = req.headers.get("authorization") ?? "";
   const qs = req.nextUrl.searchParams.get("secret");
   return header === `Bearer ${env.cronSecret}` || qs === env.cronSecret;

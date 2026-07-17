@@ -2,10 +2,25 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SendIcon } from "@/components/icons";
+import { STREAM_ERROR_MARKER } from "@/lib/stream";
 
 interface Msg {
   role: "user" | "assistant";
   content: string;
+}
+
+const STORAGE_KEY = "coco-assistant-chat";
+const MAX_STORED = 50;
+const STREAM_TIMEOUT_MS = 90_000;
+
+function loadStored(): Msg[] {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Msg[]) : [];
+    return Array.isArray(parsed) ? parsed.filter((m) => m?.content) : [];
+  } catch {
+    return [];
+  }
 }
 
 const SUGGESTIONS = [
@@ -20,47 +35,93 @@ export default function AssistantPage() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [lastFailed, setLastFailed] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Restore after mount (not in the initializer) to avoid a hydration mismatch.
+  useEffect(() => {
+    setMessages(loadStored());
+    return () => abortRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED)));
+    } catch {
+      // storage full/unavailable — chat still works, just won't survive refresh
+    }
   }, [messages]);
 
   async function send(text: string) {
     const content = text.trim();
     if (!content || busy) return;
     setError("");
+    setLastFailed("");
     setInput("");
     if (taRef.current) taRef.current.style.height = "auto";
     const history: Msg[] = [...messages, { role: "user", content }];
     setMessages([...history, { role: "assistant", content: "" }]);
     setBusy(true);
 
+    const ac = new AbortController();
+    abortRef.current = ac;
+    const timeout = setTimeout(() => ac.abort(), STREAM_TIMEOUT_MS);
+
     try {
       const res = await fetch("/api/assistant/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: history.slice(-20) }),
+        signal: ac.signal,
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? `request failed (${res.status})`);
+        throw new Error(typeof data?.error === "string" ? data.error : `request failed (${res.status})`);
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let acc = "";
+      let failedMidStream = false;
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         acc += decoder.decode(value, { stream: true });
+        if (acc.includes(STREAM_ERROR_MARKER)) {
+          acc = acc.split(STREAM_ERROR_MARKER)[0].trimEnd();
+          failedMidStream = true;
+          break;
+        }
         const snapshot = acc;
         setMessages([...history, { role: "assistant", content: snapshot }]);
       }
+      if (failedMidStream || !acc.trim()) {
+        if (acc.trim()) {
+          // Keep the partial answer, but flag that it was cut short.
+          setMessages([...history, { role: "assistant", content: acc }]);
+          setError("The answer was cut short.");
+        } else {
+          setMessages(history);
+          setError("Coco couldn't answer just now.");
+        }
+        setLastFailed(content);
+      }
     } catch (e) {
       setMessages(history);
-      setError(e instanceof Error ? e.message : String(e));
+      setInput(content); // don't make the owner retype
+      setLastFailed(content);
+      setError(
+        e instanceof DOMException && e.name === "AbortError"
+          ? "That took too long and was cancelled."
+          : e instanceof Error && e.message && !/fetch/i.test(e.message)
+            ? e.message
+            : "Coco couldn't answer just now — check your connection."
+      );
     } finally {
+      clearTimeout(timeout);
+      abortRef.current = null;
       setBusy(false);
     }
   }
@@ -110,7 +171,21 @@ export default function AssistantPage() {
             </div>
           ))
         )}
-        {error && <div className="error-note">Couldn&apos;t reach the assistant: {error}</div>}
+        {error && (
+          <div className="error-note">
+            {error}
+            {lastFailed && (
+              <button
+                className="btn btn-sm"
+                style={{ marginLeft: 10 }}
+                onClick={() => send(lastFailed)}
+                disabled={busy}
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="composer">

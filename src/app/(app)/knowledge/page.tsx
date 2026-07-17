@@ -196,7 +196,7 @@ export default function KnowledgePage() {
         <div className="section-title"><h2>Services</h2></div>
         <div className="card">
           {services.length === 0 ? (
-            <EmptyState title="No services in the catalog" hint="Services are managed in the database for now; the summary above is what the AI quotes." />
+            <EmptyState title="No services in the catalog" hint="The services summary above is what the AI quotes to customers." />
           ) : (
             <div className="table-wrap">
               <table className="table">

@@ -9,6 +9,7 @@ import { isValidTwilioRequest } from "@/lib/twilio";
 import { handleInboundMessage } from "@/services/message.service";
 import { logAutomation } from "@/services/crm.service";
 import { env, fromWhatsAppAddress } from "@/lib/config";
+import { rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -34,6 +35,13 @@ export async function POST(req: NextRequest) {
 
   if (!from || !body) {
     // Nothing to process (e.g. media-only). ACK so Twilio doesn't retry.
+    return twiml();
+  }
+
+  // Per-sender abuse guard: beyond 20 messages / 5 min we store nothing and
+  // skip the AI so a spammer can't drive unbounded Claude spend.
+  if (!rateLimit(`wa:${from}`, 20, 5 * 60_000)) {
+    await logAutomation(env.businessId, "rate_limited", { from }, "warn");
     return twiml();
   }
 

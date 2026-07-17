@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key") ?? req.headers.get("x-dashboard-password");
-  if (key !== env.dashboardPassword) {
+  if (!env.dashboardPassword || key !== env.dashboardPassword) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!gmailConfigured()) {

@@ -62,8 +62,9 @@ export const env = {
   get appBaseUrl() {
     return optional("APP_BASE_URL", "http://localhost:3000");
   },
+  // Empty when unset — auth fails closed (no default password).
   get dashboardPassword() {
-    return optional("DASHBOARD_PASSWORD", "change-me");
+    return optional("DASHBOARD_PASSWORD");
   },
 
   // --- Gmail (optional email channel) ---
