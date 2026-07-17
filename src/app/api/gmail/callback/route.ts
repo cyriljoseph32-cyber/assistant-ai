@@ -59,6 +59,13 @@ export async function GET(req: NextRequest) {
        <p>Then verify with <code>/api/gmail/status?key=&lt;DASHBOARD_PASSWORD&gt;</code>.</p>`
     );
   } catch (e) {
-    return page("Gmail: token exchange failed", `<pre>${String(e)}</pre>`, 500);
+    console.error("gmail token exchange failed:", e);
+    return page(
+      "Gmail: connection failed",
+      `<p>The authorization couldn't be completed. Please start again from
+       <code>/api/gmail/auth</code>. If it keeps failing, check the OAuth
+       client configuration in Google Cloud.</p>`,
+      500
+    );
   }
 }

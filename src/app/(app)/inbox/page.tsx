@@ -66,11 +66,11 @@ function Inbox() {
     setChecking(false);
     if (res?.ok) {
       showToast(
-        `Emails : ${d.processed ?? 0} lus, ${d.replied ?? 0} répondus, ${d.escalated ?? 0} escaladés`
+        `Email check: ${d.processed ?? 0} read, ${d.replied ?? 0} replied, ${d.escalated ?? 0} escalated`
       );
       await loadConvs();
     } else {
-      showToast(d?.error ? String(d.error) : "Relève impossible — vérifie la connexion Gmail");
+      showToast(d?.error ? String(d.error) : "Couldn't check email — verify the Gmail connection");
     }
   }
 
@@ -121,7 +121,7 @@ function Inbox() {
           <p className="sub">Every customer conversation, with the AI&apos;s replies attributed. Jump in any time.</p>
         </div>
         <button className="btn btn-primary" onClick={checkEmail} disabled={checking}>
-          <InboxIcon size={14} /> {checking ? "Relève…" : "Relève des emails"}
+          <InboxIcon size={14} /> {checking ? "Checking…" : "Check email"}
         </button>
       </div>
 
@@ -144,7 +144,7 @@ function Inbox() {
               >
                 <span className="row">
                   <span className="name">{c.contacts?.name ?? c.contacts?.whatsapp ?? "Unknown"}</span>
-                  <span className="when">{timeAgo(c.last_message_at)}</span>
+                  <span className="when">{timeAgo(c.last_message_at) || "—"}</span>
                 </span>
                 <span className="row">
                   <span className="preview">

@@ -131,32 +131,18 @@ export async function processInbox(
         escalate: intent.escalate,
       });
 
+      // Mark read as soon as the inbound is stored: if anything below fails,
+      // we'd rather miss one auto-reply than re-reply on every cron run.
+      await markRead(id);
+
       const escalateThis =
         intent.escalate ||
         intent.intent === "complaint" ||
         intent.intent === "urgent" ||
         intent.intent === "booking_request";
 
-      const reply = await generateReply(business, intent, history, `${mail.subject}\n\n${mail.body}`);
-
-      await sendEmail({
-        to: mail.fromEmail,
-        subject: mail.subject,
-        body: reply,
-        threadId: mail.threadId,
-        inReplyTo: mail.messageIdHeader,
-      });
-      await logMessage({
-        businessId,
-        conversationId: conversation.id,
-        contactId: contact.id,
-        direction: "outbound",
-        sender: escalateThis ? "human" : "ai",
-        body: reply,
-        intent: intent.intent,
-      });
-      replied++;
-
+      // Escalate before attempting the AI reply so an Anthropic outage
+      // still notifies the owner.
       if (escalateThis) {
         await escalate({
           business,
@@ -173,7 +159,25 @@ export async function processInbox(
         escalated++;
       }
 
-      await markRead(id);
+      const reply = await generateReply(business, intent, history, `${mail.subject}\n\n${mail.body}`);
+
+      await sendEmail({
+        to: mail.fromEmail,
+        subject: mail.subject,
+        body: reply,
+        threadId: mail.threadId,
+        inReplyTo: mail.messageIdHeader,
+      });
+      await logMessage({
+        businessId,
+        conversationId: conversation.id,
+        contactId: contact.id,
+        direction: "outbound",
+        sender: "ai", // AI wrote it — keep Activity's AI-vs-human stats truthful
+        body: reply,
+        intent: intent.intent,
+      });
+      replied++;
       processed++;
     } catch (e) {
       await logAutomation(businessId, "email_failed", { id, error: String(e) }, "error");
