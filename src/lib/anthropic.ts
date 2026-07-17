@@ -6,6 +6,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "./config";
+import { STREAM_ERROR_MARKER } from "./stream";
 
 let _client: Anthropic | null = null;
 
@@ -63,7 +64,10 @@ export function streamText(opts: {
         await stream.finalMessage();
         controller.close();
       } catch (e) {
-        controller.enqueue(encoder.encode(`\n\n[error] ${String(e)}`));
+        // HTTP status is already 200 mid-stream; signal failure with a
+        // sentinel the client strips and turns into its error UI.
+        console.error("streamText failed:", e);
+        controller.enqueue(encoder.encode(STREAM_ERROR_MARKER));
         controller.close();
       }
     },

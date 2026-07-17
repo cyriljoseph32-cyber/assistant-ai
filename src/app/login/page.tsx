@@ -23,6 +23,10 @@ export default function LoginPage() {
     if (res?.ok) {
       router.replace("/assistant");
       router.refresh();
+    } else if (res?.status === 429) {
+      setError("Too many attempts — wait a minute and try again.");
+    } else if (res && res.status >= 500) {
+      setError("Sign-in isn't available right now. Try again shortly.");
     } else {
       setError("That password didn't work. Try again.");
     }
