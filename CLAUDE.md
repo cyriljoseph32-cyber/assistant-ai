@@ -42,3 +42,13 @@ No Tailwind, no UI library. All styling lives in `src/app/globals.css` as a toke
 - Validate all request bodies with zod `safeParse` → 400 with `error.flatten()`.
 - Client pages fetch same-origin APIs (session cookie is sent automatically) — no auth headers in browser code.
 - Customer-facing AI messages are logged via `crm.service.logMessage` with `sender: "ai" | "human"`; automation events via `logAutomation` — keep this so `/activity` stays truthful.
+
+## Central memory
+
+Cyril's cross-project memory lives in the `cyriljoseph32-cyber/Coconut-Samui-Rugby-Academy`
+repo under `brain/memoire/` — this project's sheet is `brain/memoire/projets/assistant-ai.md`.
+(Not to be confused with `coco2`, the Samui tourist concierge — this repo is the front-desk
+product.) When starting a task, consult the sheet if reachable (sibling checkout at
+`/home/user/Coconut-Samui-Rugby-Academy/` or via GitHub). After a significant change here,
+update the sheet + `brain/memoire/journal.md`, or flag it to Cyril so the `memory` agent
+does it.
