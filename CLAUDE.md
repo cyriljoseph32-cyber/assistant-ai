@@ -43,6 +43,20 @@ No Tailwind, no UI library. All styling lives in `src/app/globals.css` as a toke
 - Client pages fetch same-origin APIs (session cookie is sent automatically) — no auth headers in browser code.
 - Customer-facing AI messages are logged via `crm.service.logMessage` with `sender: "ai" | "human"`; automation events via `logAutomation` — keep this so `/activity` stays truthful.
 
+## Agent team
+
+| Agent | Role | Shortcut |
+|---|---|---|
+| `dev-coco` (`.claude/agents/dev-coco.md`) | Code: console, AI pipeline, CRM — build + typecheck before any push | `/coco-dev` |
+| `onboarding-coco` (`.claude/agents/onboarding-coco.md`) | New-client install: knowledge base, env vars, Twilio/Gmail, go-live checklist | `/coco-onboarding` |
+| `qualite-coco` (`.claude/agents/qualite-coco.md`) | Operations: `/activity` review, AI answer quality, escalations, prompt tuning | `/coco-qualite` |
+| `commercial-coco` (`.claude/agents/commercial-coco.md`) | Sales: pitch, demos, Koh Samui prospecting — drafts only | `/coco-vente` |
+
+Shared rules: reply to Cyril in French; no external action (client contact, production
+config) without his explicit approval; never invent pricing or client data
+(`[À COMPLÉTER PAR CYRIL]`); each agent reads this project's memory sheet before acting and
+updates the central memory after significant work.
+
 ## Central memory
 
 Cyril's cross-project memory lives in the `cyriljoseph32-cyber/Coconut-Samui-Rugby-Academy`
