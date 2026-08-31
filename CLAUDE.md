@@ -43,6 +43,24 @@ No Tailwind, no UI library. All styling lives in `src/app/globals.css` as a toke
 - Client pages fetch same-origin APIs (session cookie is sent automatically) — no auth headers in browser code.
 - Customer-facing AI messages are logged via `crm.service.logMessage` with `sender: "ai" | "human"`; automation events via `logAutomation` — keep this so `/activity` stays truthful.
 
+## Code map (graphify)
+
+`graphify-out/` holds a local, deterministic code map generated with
+[graphify](https://github.com/Graphify-Labs/graphify) (tree-sitter AST extraction,
+`graphify extract . --code-only` — no LLM, nothing left the machine). Before grepping the
+codebase for an architecture question ("what calls X", "how is Y connected"), prefer:
+
+```bash
+graphify query "<question>"        # scoped subgraph for a plain-language question
+graphify explain "<Symbol>"        # neighbors + confidence-tagged edges for one node
+graphify path "<A>" "<B>"          # shortest path between two concepts
+graphify god-nodes                 # most-connected files/symbols (architectural hubs)
+```
+
+`graphify-out/graph.html` opens directly in a browser for visual exploration. Regenerate
+after a significant refactor: `graphify extract . --code-only && graphify cluster-only .
+--no-label` (from repo root; requires `uv tool install graphifyy`).
+
 ## Agent team
 
 | Agent | Role | Shortcut |
